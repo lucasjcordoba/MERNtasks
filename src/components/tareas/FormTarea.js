@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import proyectoContext from "../../context/proyectos/proyectoContext";
 import tareaContext from "../../context/tareas/tareaContext";
 
@@ -10,8 +10,18 @@ const FormTarea = () => {
 
   //Obtener la función del context de tarea
   const tareasContext = useContext(tareaContext);
-  const {agregarTarea} = tareasContext;
+  const {tareaseleccionada, errortarea, agregarTarea, validarTarea, obtenerTareas, actualizarTarea, limpiarTarea} = tareasContext;
 
+  //Effect que detecta si hay una tarea seleccionada
+  useEffect(() => {
+    if(tareaseleccionada !== null) {
+      guardarTarea(tareaseleccionada)
+    }else {
+      guardarTarea({
+        nombre: ''
+      })
+    }
+  }, [tareaseleccionada])
 
   //State del formulario
   const [tarea, guardarTarea] = useState({
@@ -39,18 +49,36 @@ const FormTarea = () => {
     e.preventDefault();
 
     //validar
+    if(nombre.trim() === '') {
+      validarTarea();
+      return;
+    }
+
+    //Si es edición o si es nueva tarea
+    if(tareaseleccionada === null) {
+      //agregar la nueva tarea al state de tareas
+      tarea.proyectoId = proyectoActual.id;
+      tarea.estado = false;
+      agregarTarea(tarea)
+    } else {
+      //actualizar tarea existente
+      actualizarTarea(tarea);
+      
+      //elimina tareaseleccionada del state
+      limpiarTarea();
+    }
 
 
-    //pasar la validación
+    
 
-
-    //agregar la nueva tarea al state de tareas
-    tarea.proyectoId = proyectoActual.id;
-    tarea.estado = false;
-    agregarTarea(tarea);
+    //Obtener y filtrar las tareas del proyecto actual
+    obtenerTareas(proyectoActual.id);
 
 
     //reiniciar el form
+    guardarTarea({
+      nombre: ''
+    })
   }
 
   return (
@@ -72,10 +100,12 @@ const FormTarea = () => {
           <input
             type="submit"
             className="btn btn-primario btn-submit btn-block"
-            value="Agregar Tarea"
+            value={tareaseleccionada ? 'Editar Tarea' : 'Agregar Tarea'}
           />
         </div>
       </form>
+
+      {errortarea ? <p className="mensaje error">El nombre de la tarea es obligatorio</p>  :null}
     </div>
   );
 };
